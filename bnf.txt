@@ -1,0 +1,47 @@
+<class declaration> ::= class <identifier> <class body>
+<class body> ::= ( <class body declarations> )
+<class body declarations> ::= <class body declaration> | <class body declarations> <class body declaration>
+<class body declaration> ::= <class member declaration> | <static initializer> | <constructor declaration>
+<class member declaration> ::= <field declaration> | <method declaration>
+<field declaration> ::= static? <type> <variable declarators> ;
+<variable declarators> ::= <variable declarator> | <variable declarators> , <variable declarator>
+<variable declarator> ::= <identifier> = <literal>
+
+<static initializer> ::= static <block>
+<constructor declaration> ::= <constructor declarator> <block statements>?
+<constructor declarator> ::= <identifier> ( <formal parameter list>? )
+<formal parameter list> ::= <formal parameter> | <formal parameter list> , <formal parameter>
+<formal parameter> ::= <type> <identifier>
+
+<letter> ::= a | b ... | z | A | B ... | Z | _
+<letters> ::= <letter> | <letter> <letters>
+<number> ::= 0 | 1 | 2 | ... | 9
+<idchar> ::= <number> | <letter>
+<idchar list> ::= <idchar> <idcharlist>
+<identifier> ::= <letter> <idchar list>
+<identifier list> ::= <identifier> | <identifier> <identifier list>
+
+<type> ::= <primitive type> | <identifier>
+<primitive type> ::= byte | short | int | long | char | float | double | boolean
+
+<method declaration> ::= <method header> <method body>
+<method header> ::= static? <result type> <method declarator>
+<result type> ::= <type> | void
+<method declarator> ::= <identifier> ( <formal parameter list>? )
+<method body> ::= <block> | ;
+
+<block> ::= { <block statements>? }
+<block statements> ::= <block statement> | <block statements> <block statement>
+<block statement> ::= <local variable declaration> | <class instance creation expression>;
+<class instance creation expression> ::= new <identifier> ( <identifier list> )
+<local variable declaration> ::= <type> <variable declarators>
+
+<literal> ::= <integer literal> | <floating-point literal> | <boolean literal> | <character literal> | <string literal> | <null literal>
+<sign> ::= + | -
+<integer literal> ::= <sign>? <numbers>
+<numbers> ::= <number> | <number> <numbers>
+<floating-point literal> ::= <sign>? <numbers> . <numbers>
+<boolean literal> ::= true | false
+<character literal> ::= ' <letter> '
+<string literal> ::= " <letters> "
+<null literal> ::= null

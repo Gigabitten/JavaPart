@@ -3,7 +3,7 @@
 #include <iostream>
 #include <regex>
 #include <sstream>
-#include <cctype> // for isspace
+#include <cctype>
 
 #include "Testing.h"
 
@@ -46,7 +46,8 @@ class Tokenizer {
   Token peek() {
     Token t = EMPTYTOKEN;
     name = "";
-    regex keywordExpr("^(class|;|\\(|\\)|\\{|\\}|static|,|\\+|-|=|int|float|bool|char|string|NULL|([a-zA-Z]|_)([a-zA-Z]|[0-9]|_))[\\h|\\v]*");
+    while(isspace(text[0])) text = text.substr(1);
+    regex keywordExpr("^(class|;|\\(|\\)|\\{|\\}|static|,|\\+|-|=|int|float|bool|char|string|NULL|([a-zA-Z]|_)([a-zA-Z]|[0-9]|_))");
     regex idExpr("^([a-zA-Z]|_)([a-zA-Z]|[0-9]|_)*");
     if(regex_search(text, sm, keywordExpr)) {
       if(sm[0] == "") t = EMPTYTOKEN;
@@ -78,7 +79,6 @@ class Tokenizer {
     charNumber = originalLength - text.size();
     //Leave reference for white space in case of errors.
     //if(text[0] == ' ') text = text.substr(1);
-    while(isspace(text[0])) text = text.substr(1);
   }
   Token next() {
     Token t = peek();

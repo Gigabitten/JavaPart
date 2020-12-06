@@ -6,7 +6,6 @@
 #include <fstream>
 #include <sstream>
 
-//Remember to add syntax file!
 #include "Testing.h"
 #include "Tokenizer.h"
 #include "Syntax.h"
@@ -22,7 +21,7 @@ bool javaExpression(Tokenizer &tokens, JavaNode *ast);
 bool classBody(Tokenizer &tokens, JavaNode *ast) {
   if(tokens.next() != LEFTBRACKET) throw SyntaxError("{ required to begin class definition");
   // need class body decls
-  if(tokens.next() != LEFTBRACKET) throw SyntaxError("{ has no associated }");
+  if(tokens.next() != RIGHTBRACKET) throw SyntaxError("{ has no associated }");
   return true;
 }
 
@@ -97,7 +96,7 @@ void Tests() {
     runTests();
   }
   catch (SyntaxError e) {
-    cout << e;
+    cout << "  " << e;
   }
 }
 

@@ -1,5 +1,5 @@
-<class declaration> ::= class <identifier> <class body>
-<class body> ::= ( <class body declarations> )
+* <class declaration> ::= class <identifier> <class body>
+* <class body> ::= { <class body declarations> }
 <class body declarations> ::= <class body declaration> | <class body declarations> <class body declaration>
 <class body declaration> ::= <class member declaration> | <static initializer> | <constructor declaration>
 <class member declaration> ::= <field declaration> | <method declaration>
@@ -45,3 +45,5 @@
 <character literal> ::= ' <letter> '
 <string literal> ::= " <letters> "
 <null literal> ::= null
+
+* = done

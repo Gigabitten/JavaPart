@@ -10,12 +10,11 @@ class SyntaxError {
   string location; // A file for the exception
   string explanation; // An explanation of the exception
  public:
-  SyntaxError(string newExplanation,string newLocation) {
+  SyntaxError(string newExplanation,string newLocation = "") {
     explanation=newExplanation;
     location=newLocation;
   }
   friend ostream &operator <<(ostream &out,const SyntaxError &e) {
-    return out<< e.location << " Exception "<< e.explanation 
-              << endl;
+    return out<< e.location << "SyntaxError:  " << e.explanation << endl;
   }
 };

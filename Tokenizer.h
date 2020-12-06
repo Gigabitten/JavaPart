@@ -34,6 +34,7 @@ class Tokenizer {
   string location() {
     stringstream ss;
     ss << filename << ":" << lineNumber << ":" << charNumber << ":";
+    return ss.str();
   }
 
   Tokenizer(string codeText, string newFilename, int newLineNumber = 0) {
@@ -45,7 +46,6 @@ class Tokenizer {
   Token peek() {
     Token t = EMPTYTOKEN;
     name = "";
-    //Will we need to do specify brackets?
     regex keywordExpr("^(class|;|\\(|\\)|\\{|\\}|static|,|\\+|-|=|int|float|bool|char|string|NULL|([a-zA-Z]|_)([a-zA-Z]|[0-9]|_))");
     regex idExpr("^([a-zA-Z]|_)([a-zA-Z]|[0-9]|_)*");
     if(regex_search(text, sm, keywordExpr)) {
@@ -75,7 +75,7 @@ class Tokenizer {
   }
   void pop() {
     text = sm.suffix().str();
-    charNumber - originalLength - text.size();
+    charNumber = originalLength - text.size();
     //Leave reference for white space in case of errors.
     //if(text[0] == ' ') text = text.substr(1);
     while(isspace(text[0])) text = text.substr(1);
@@ -92,7 +92,7 @@ class Tokenizer {
 
 class TTest1:public Test{
  public:
- TTest1():Test("Check Each Symbol"){
+ TTest1():Test("Check Each Symbol") {
   }
   bool checker() {
     Tokenizer tokenizer("class ; ( ) { } static , - + = int float bool char string NULL zap","TTest1",1);
@@ -114,7 +114,6 @@ class TTest1:public Test{
     if (tokenizer.next()!=STRING) return false;
     if (tokenizer.next()!=NULL_LIT) return false;
     if (tokenizer.next()!=IDENTIFIER) return false;
-    cout << "Tests successful" << endl;
     return true;
   } 
 };

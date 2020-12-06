@@ -69,7 +69,7 @@ class JavaNode:public JavaNodeId {
     out << " Number of Children " << j->children.size() << " Name:" << j->name << endl;
     if (j->children.size() > 0) {
       depth++;
-      for(unsigned i = 0; i < depth; i++) {
+      for(int i = 0; i < depth; i++) {
         out << '+';
         for (int j = 0; j < depth; j++) {
           out << '-';

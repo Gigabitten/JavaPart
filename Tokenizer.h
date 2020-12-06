@@ -10,17 +10,16 @@
 using namespace std;
 
 enum Token {EMPTYTOKEN, CLASS, SEMICOLON, LEFTPAREN, RIGHTPAREN, LEFTBRACKET, RIGHTBRACKET, STATIC, COMMA, PRIMITIVE, IDENTIFIER,
-  RESULT, SIGN, EQUALS, INTEGER, FLOAT, BOOL, CHAR, STRING, EXPRESSION, NULL_LIT, NEW};
-
+            RESULT, SIGN, EQUALS, INTEGER, FLOAT, BOOL, CHAR, STRING, EXPRESSION, NULL_LIT, NEW};
 
 /*These nodes more based in expression parse?
-enum Node {CLASSDECL, CLASSBOD, CLASSBODDECLS, CLASSMEMDECLS, FIELDDECL, VARDECLS, STATINIT,
+  enum Node {CLASSDECL, CLASSBOD, CLASSBODDECLS, CLASSMEMDECLS, FIELDDECL, VARDECLS, STATINIT,
   CONSTRUCTOR, CONSTRUCTORDECL, FORMPARAMS, TYPE, METHODDECL, METHODHEAD, RESULTTYPE,
   METHODDECLARATOR, METHODBOD, BLOCK, BLOCKSTATEMENTS, CLASSCREATE, LOCVAR};
 */
 
 class Tokenizer {
-  private:
+ private:
   string text;
   smatch sm;
   int originalLength;
@@ -29,7 +28,7 @@ class Tokenizer {
   string filename;
   int charNumber;
 
-  public:
+ public:
   string name;
   //Should return location of errors. Based off quilt example.
   string location() {
@@ -92,18 +91,18 @@ class Tokenizer {
 };
 
 class TTest1:public Test{
-	public:
-	TTest1():Test("Check Each Symbol"){
-	}
-	bool checker() {
-	  Tokenizer tokenizer("class ; ( ) { } static , - + = int float bool char string NULL zap","TTest1",1);
-	  if (tokenizer.next()!=CLASS) return false;
-	  if (tokenizer.next()!=SEMICOLON) return false;
-	  if (tokenizer.next()!=LEFTPAREN) return false;
-	  if (tokenizer.next()!=RIGHTPAREN) return false;
-	  if (tokenizer.next()!=LEFTBRACKET) return false;
-	  if (tokenizer.next()!=RIGHTBRACKET) return false;
-	  if (tokenizer.next()!=STATIC) return false;
+ public:
+ TTest1():Test("Check Each Symbol"){
+  }
+  bool checker() {
+    Tokenizer tokenizer("class ; ( ) { } static , - + = int float bool char string NULL zap","TTest1",1);
+    if (tokenizer.next()!=CLASS) return false;
+    if (tokenizer.next()!=SEMICOLON) return false;
+    if (tokenizer.next()!=LEFTPAREN) return false;
+    if (tokenizer.next()!=RIGHTPAREN) return false;
+    if (tokenizer.next()!=LEFTBRACKET) return false;
+    if (tokenizer.next()!=RIGHTBRACKET) return false;
+    if (tokenizer.next()!=STATIC) return false;
     if (tokenizer.next()!=COMMA) return false;
     if (tokenizer.next()!=SIGN) return false;
     if (tokenizer.next()!=SIGN) return false;
@@ -115,6 +114,6 @@ class TTest1:public Test{
     if (tokenizer.next()!=STRING) return false;
     if (tokenizer.next()!=NULL_LIT) return false;
     if (tokenizer.next()!=IDENTIFIER) return false;
-   	return true;
-	} 
+    return true;
+  } 
 };

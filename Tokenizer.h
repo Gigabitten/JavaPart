@@ -46,7 +46,7 @@ class Tokenizer {
     Token t = EMPTYTOKEN;
     name = "";
     //Will we need to do specify brackets?
-    regex keywordExpr("^(class|;|\\(|\\)|{|}|static|,|+|-|=|int|float|bool|char|string|NULL|([a-zA-Z]|_)([a-zA-Z]|[0-9]|_))");
+    regex keywordExpr("^(class|;|\\(|\\)|\\{|\\}|static|,|\\+|-|=|int|float|bool|char|string|NULL|([a-zA-Z]|_)([a-zA-Z]|[0-9]|_))");
     regex idExpr("^([a-zA-Z]|_)([a-zA-Z]|[0-9]|_)*");
     if(regex_search(text, sm, keywordExpr)) {
       if(sm[0] == "") t = EMPTYTOKEN;
@@ -114,6 +114,7 @@ class TTest1:public Test{
     if (tokenizer.next()!=STRING) return false;
     if (tokenizer.next()!=NULL_LIT) return false;
     if (tokenizer.next()!=IDENTIFIER) return false;
+    cout << "Tests successful" << endl;
     return true;
   } 
 };

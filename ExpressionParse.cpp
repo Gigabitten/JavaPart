@@ -13,7 +13,6 @@
 using namespace std;
 
 bool javaExpression(Tokenizer &tokens, JavaNode *ast);
-//Insert expressions...
 
 bool classDeclaration(Tokenizer &tokens, JavaNode *ast) {
 
@@ -28,7 +27,7 @@ bool javaExpression(Tokenizer &tokens, JavaNode *ast) {
     return classDeclaration(tokens, ast);
   }
   else if (t == STATIC) {
-      
+    
   }
   else if (t == INTEGER) {
 
@@ -67,7 +66,8 @@ void *javaExpressionHelper(string texts, string filename, int linenumber) {
 //Put in parse test.
 
 void Tests() {
-  
+  tests.push_back(new TTest1());
+  runTests();
 }
 
 int main(int argc, char **argv) {

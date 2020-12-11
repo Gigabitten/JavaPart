@@ -14,20 +14,63 @@
 using namespace std;
 
 bool javaExpression(Tokenizer &tokens, JavaNode *ast);
-
-bool block(Tokenizer &tokens, JavaNode *ast) {
-  return true;
-}
-
-bool constructorDecl(Tokenizer &tokens, JavaNode *ast) {
-  return true;
-}
-
-bool classMemberDecl(Tokenizer &tokens, JavaNode *ast) {
-  return true;
-}
-
 bool isType(Token t) { return t == FLOAT || t == INTEGER || t == BOOLEAN || t == CHAR || t == STRING || t == NULL_LIT; }
+
+// <block> ::= { <block statements>? }
+// <block statements> ::= <block statement> | <block statements> <block statement>
+// <block statement> ::= <local variable declaration> | <class instance creation expression>;
+bool block(Tokenizer &tokens, JavaNode *ast) {
+  Token t = tokens.next();
+  if(t != LEFTBRACKET) throw SyntaxError("Expected { at start of block");
+
+  while(true) {
+    if(false) { // if local variable declaration
+    } else if(false) { // if class instance creation expression
+    } else break;
+  }
+  
+  t = tokens.next();
+  if(t != LEFTBRACKET) throw SyntaxError("Expected } at end of block");
+  return true;
+}
+
+// Note: every appearance of formal parameter list is as ( <formal parameter list>? )
+// <formal parameter list> ::= <formal parameter> | <formal parameter list> , <formal parameter>
+// <formal parameter> ::= <type> <identifier>
+bool formalParameterList(Tokenizer &tokens, JavaNode *ast) {
+  if(t != LEFTPAREN) throw SyntaxError("Need ( to begin parameter list");
+  t = tokens.next();
+  while(t != RIGHTPAREN) {
+    if(!isType(t)) throw SyntaxError("Type name needed for parameter");
+    t = tokens.next();
+    if(t != IDENTIFIER) throw SyntaxError("Unnamed parameter in parameter list");
+    t = tokens.next();
+    if(t == COMMA) {
+      t = tokens.peek();
+      if(t != IDENTIFIER) throw SyntaxError("Comma indicates more parameters, but no more found");
+      tokens.next();
+    }
+  }
+  return true;
+}
+
+// don't get confused - formal parameter list is responsible for the parentheses
+// as well as the optionality of the list
+// <constructor declaration> ::= <constructor declarator> <block>
+// <constructor declarator> ::= <identifier> ( <formal parameter list>? )
+bool constructorDecl(Tokenizer &tokens, JavaNode *ast) {
+  Token t = tokens.next();
+  if(t != IDENTIFIER) throw SyntaxError("Must name constructor");
+  formalParameterList(tokens, ast);
+  block(tokens, ast);
+  return true;
+}
+
+// <class member declaration> ::= <field declaration> | <method declaration>
+bool classMemberDecl(Tokenizer &tokens, JavaNode *ast) {
+  
+  return true;
+}
 
 // <class body> ::= { <class body declarations> }
 // <class body declarations> ::= <class body declaration> | <class body declarations> <class body declaration>

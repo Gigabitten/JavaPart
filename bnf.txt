@@ -1,17 +1,17 @@
 * <class declaration> ::= class <identifier> <class body>
 * <class body> ::= { <class body declarations> }
-<class body declarations> ::= <class body declaration> | <class body declarations> <class body declaration>
-<class body declaration> ::= <class member declaration> | <static initializer> | <constructor declaration>
+* <class body declarations> ::= <class body declaration> | <class body declarations> <class body declaration>
+* <class body declaration> ::= <class member declaration> | <static initializer> | <constructor declaration>
 <class member declaration> ::= <field declaration> | <method declaration>
 <field declaration> ::= static? <type> <variable declarators> ;
 <variable declarators> ::= <variable declarator> | <variable declarators> , <variable declarator>
 <variable declarator> ::= <identifier> = <literal>
 
-<static initializer> ::= static <block>
-<constructor declaration> ::= <constructor declarator> <block statements>?
-<constructor declarator> ::= <identifier> ( <formal parameter list>? )
-<formal parameter list> ::= <formal parameter> | <formal parameter list> , <formal parameter>
-<formal parameter> ::= <type> <identifier>
+* <static initializer> ::= static <block>
+* <constructor declaration> ::= <constructor declarator> <block>
+* <constructor declarator> ::= <identifier> ( <formal parameter list>? )
+* <formal parameter list> ::= <formal parameter> | <formal parameter list> , <formal parameter>
+* <formal parameter> ::= <type> <identifier>
 
 <letter> ::= a | b ... | z | A | B ... | Z | _
 <letters> ::= <letter> | <letter> <letters>
@@ -30,8 +30,8 @@
 <method declarator> ::= <identifier> ( <formal parameter list>? )
 <method body> ::= <block> | ;
 
-<block> ::= { <block statements>? }
-<block statements> ::= <block statement> | <block statements> <block statement>
+* <block> ::= { <block statements>? }
+* <block statements> ::= <block statement> | <block statements> <block statement>
 <block statement> ::= <local variable declaration> | <class instance creation expression>;
 <class instance creation expression> ::= new <identifier> ( <identifier list> )
 <local variable declaration> ::= <type> <variable declarators>

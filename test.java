@@ -1,5 +1,3 @@
 class Test {
-    heck
-        static { }
-    boolean
+    static int i = L;
 }

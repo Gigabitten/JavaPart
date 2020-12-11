@@ -18,15 +18,44 @@ bool isType(Token t) { return t == FLOAT || t == INTEGER || t == BOOLEAN || t ==
 
 // <block> ::= { <block statements>? }
 // <block statements> ::= <block statement> | <block statements> <block statement>
-// <block statement> ::= <local variable declaration> | <class instance creation expression>;
+// <block statement> ::= <variable declaration>; | <class instance creation expression>;
+// <variable declaration> ::= <type>? <variable declarator>
+// <variable declarator> ::= <identifier> = <literal>
+// <class instance creation expression> ::= new <identifier> ( <identifier list> )
+// <identifier list> ::= <identifier> | <identifier> , <identifier list>
 bool block(Tokenizer &tokens, JavaNode *ast) {
   Token t = tokens.next();
   if(t != LEFTBRACKET) throw SyntaxError("Expected { at start of block");
 
   while(true) {
-    if(false) { // if local variable declaration
-    } else if(false) { // if class instance creation expression
+    t = tokens.peek();
+    if(isType(t) || t == IDENTIFIER) { // if local variable declaration
+      if(isType(t)) {
+        t = tokens.next();
+      }
+      if(t != IDENTIFIER) throw SyntaxError("Variable declaration needs identifier");
+      t = tokens.next();
+      if(t != EQUALS) throw SyntaxError("Variable must be initialized");
+      t = tokens.next();
+      if(t != LITERAL) throw SyntaxError("Variable must be initialized");
+    } else if(t == NEW) { // if class instance creation expression
+      t = tokens.next();
+      if(t != IDENTIFIER) throw SyntaxError("No identifier named in constructor call");
+      t = tokens.next();
+      if(t != LEFTPAREN) throw SyntaxError("No ( in constructor call");
+      t = tokens.peek();
+      while(t != RIGHTPAREN) {
+        t = tokens.next();
+        if(t != IDENTIFIER) throw SyntaxError("Need identifier in argument list for constructor call");
+        t = tokens.next();
+        if(t == COMMA) {
+          t = tokens.peek();
+          if(t != IDENTIFIER) throw SyntaxError("Comma indicates more parameters, but no more found");
+        }
+      }
     } else break;
+    t = tokens.next();
+    if(t != SEMICOLON) throw SyntaxError("Missing ; in field declaration");      
   }
   
   t = tokens.next();
@@ -48,8 +77,7 @@ bool formalParameterList(Tokenizer &tokens, JavaNode *ast) {
     t = tokens.next();
     if(t == COMMA) {
       t = tokens.peek();
-      if(t != IDENTIFIER) throw SyntaxError("Comma indicates more parameters, but no more found");
-      tokens.next();
+      if(!isType(t)) throw SyntaxError("Comma indicates more parameters, but no more found");
     }
   }
   return true;
@@ -122,11 +150,17 @@ bool classMemberDecl(Tokenizer &tokens, JavaNode *ast) {
   Token type = temp.next();
   Token t;
   if(type == STATIC) {
-    t = temp.next();
+    type = temp.next();
   }
-  if(!(isType(type) || type == VOID)) throw SyntaxError("Type required when declaring member");
+  if(!isType(type) && type != VOID) {
+    tokens = temp; // in case you want to output tokens to help debug    
+    throw SyntaxError("Type required when declaring member");
+  }
   t = temp.next();
-  if(t != IDENTIFIER) throw SyntaxError("Identifier required when declaring member");
+  if(t != IDENTIFIER) {
+    tokens = temp;
+    throw SyntaxError("Identifier required when declaring member");
+  }
   t = tokens.peek();
   if(t == EQUALS) {
     if(type == VOID) throw SyntaxError("Field cannot be of type 'void'");
@@ -242,19 +276,23 @@ public:
     // I found this online. It's weird, but it basically makes sense if you think about it.
     inf >> ss.rdbuf();
     Tokenizer tokenizer(ss.str(), name);
-    return classDeclaration(tokenizer, new JavaNode());    
+    try {
+      classDeclaration(tokenizer, new JavaNode());    
+    }
+    catch(SyntaxError e) {
+      cout << "  " << e;
+      //tokenizer.check();
+      return false;
+    }
+    return true;
   }
 };
 
 void Tests() {
   tests.push_back(new TTest1());
   tests.push_back(new ClassFileTest("Basic parse test", "test.java"));
-  try {
-    runTests();
-  }
-  catch (SyntaxError e) {
-    cout << "  " << e;
-  }
+  //tests.push_back(new ClassFileTest("Full parse test", "fulltest.java"));  
+  runTests();
 }
 
 int main(int argc, char **argv) {

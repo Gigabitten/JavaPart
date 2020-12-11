@@ -6,6 +6,7 @@
 #include <cctype>
 
 #include "Testing.h"
+#include "Syntax.h"
 
 using namespace std;
 
@@ -48,7 +49,7 @@ class Tokenizer {
     name = "";
     while(isspace(text[0])) text = text.substr(1);
     // L is a placeholder for literals; later, we'll have more than one kind of literal
-    regex keywordExpr("^(class|;|\\(|\\)|\\{|\\}|static|,|\\+|-|=|int|float|boolean|void|char|string|NULL|L|([a-zA-Z]|_)([a-zA-Z]|[0-9]|_))");
+    regex keywordExpr("^(class|;|\\(|\\)|\\{|\\}|static|,|\\+|-|=|int|float|boolean|void|char|string|NULL|L)");
     regex idExpr("^([a-zA-Z]|_)([a-zA-Z]|[0-9]|_)*");
     if(regex_search(text, sm, keywordExpr)) {
       if(sm[0] == "") t = EMPTYTOKEN;
@@ -70,11 +71,11 @@ class Tokenizer {
       else if(sm[0] == "void") t = VOID;      
       else if(sm[0] == "NULL") t = NULL_LIT;
       else if(sm[0] == "L") t = LITERAL;      
-      else if(regex_search(text, sm, idExpr)) {
-        t = IDENTIFIER;
-        name = sm[0];
-      }
-    }
+    } else if(regex_search(text, sm, idExpr)) {
+      t = IDENTIFIER;
+      name = sm[0];
+      } else throw SyntaxError("Error: unexpected token");
+    check();
     return t;
   }
   void pop() {
@@ -89,7 +90,7 @@ class Tokenizer {
     return t;
   }
   void check() {
-    cerr << "Tokenizer: " << text << ":" << endl;
+    cerr << "Tokenizer:" << text << ":" << endl;
   }
 };
 

@@ -66,9 +66,43 @@ bool constructorDecl(Tokenizer &tokens, JavaNode *ast) {
   return true;
 }
 
+// <field declaration> ::= static? <type> <variable declarator> ;
+// <variable declarator> ::= <identifier> = <literal>
+bool fieldDecl(Tokenizer &tokens, JavaNode *ast) {
+  Token t = tokens.next();
+  
+}
+
+// <method declaration> ::= <method header> <method body>
+// <method header> ::= static? <result type> <method declarator>
+// <result type> ::= <type> | void
+// <method declarator> ::= <identifier> ( <formal parameter list>? )
+// <method body> ::= <block> | ;
+bool methodDecl(Tokenizer &tokens, JavaNode *ast) {
+  
+}
+
 // <class member declaration> ::= <field declaration> | <method declaration>
 bool classMemberDecl(Tokenizer &tokens, JavaNode *ast) {
-  
+  // both start with "static? type identifier" so we want to skip 3
+  bool isVoid = false;
+  Tokenizer temp = tokens;
+  Token t = temp.next();  
+  if(t == STATIC) {
+    t = temp.next();
+  }
+  if(!isType(t)) {
+    if(t == VOID) isVoid = true;
+    else throw SyntaxError("Type required when declaring member");
+  }
+  t = temp.next();
+  if(t != identifier) throw SyntaxError("Identifier required when declaring member");
+  t = tokens.peek();
+  if(t == EQUALS) {
+    fieldDecl(tokens, ast);
+  } else if(t == LEFTBRACKET) {
+    methodDecl(tokens, ast);
+  } else throw SyntaxError("Malformed class member: must be a method or field declaration");
   return true;
 }
 
@@ -120,54 +154,54 @@ bool classDeclaration(Tokenizer &tokens, JavaNode *ast) {
 }
 
 /* not currently needed for anything
-bool javaExpression(Tokenizer &tokens, JavaNode *ast) {
-  Token t = tokens.peek();
+   bool javaExpression(Tokenizer &tokens, JavaNode *ast) {
+   Token t = tokens.peek();
 
-  Tokenizer temp = tokens;
+   Tokenizer temp = tokens;
 
-  if (t == CLASS) {
-    return classDeclaration(tokens, ast);
-  }
-  else if (t == STATIC) {
+   if (t == CLASS) {
+   return classDeclaration(tokens, ast);
+   }
+   else if (t == STATIC) {
     
-  }
-  else if (t == INTEGER) {
+   }
+   else if (t == INTEGER) {
 
-  }
-  else if (t == FLOAT) {
+   }
+   else if (t == FLOAT) {
 
-  }
-  else if (t == BOOLEAN) {
+   }
+   else if (t == BOOLEAN) {
 
-  }
-  else if (t == CHAR) {
+   }
+   else if (t == CHAR) {
 
-  }
-  else if (t == STRING) {
+   }
+   else if (t == STRING) {
 
-  }
+   }
 
-  return false;
-}
+   return false;
+   }
 
-//Would expression helper be a void function?
-void javaExpressionHelper(string texts, string filename, int linenumber) {
-  Tokenizer tokens(texts, filename, linenumber);
-  JavaNode *root = new JavaNode(EXPRESSION);
-  try {
-    javaExpression(tokens, root);
-    delete root;
-  } catch(SyntaxError e) {
-    tokens.check();
-    throw e;
-  }
-}
+   //Would expression helper be a void function?
+   void javaExpressionHelper(string texts, string filename, int linenumber) {
+   Tokenizer tokens(texts, filename, linenumber);
+   JavaNode *root = new JavaNode(EXPRESSION);
+   try {
+   javaExpression(tokens, root);
+   delete root;
+   } catch(SyntaxError e) {
+   tokens.check();
+   throw e;
+   }
+   }
 */
 
 // only tests that the file compiles error-free
 class ClassFileTest : public Test {
   string fileName;
- public:
+public:
   ClassFileTest(string newName, string newFileName) : Test(newName) {
     fileName = newFileName;
   }

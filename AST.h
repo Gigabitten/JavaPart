@@ -56,7 +56,7 @@ class JavaNode:public JavaNodeId {
     switch(j->operation) {
     case INTEGER: out << "Integer Declaration" ; break;
     case FLOAT: out << "Float Declaration" ; break;
-    case BOOL: out << "Boolean Declaration" ; break;
+    case BOOLEAN: out << "Boolean Declaration" ; break;
     case CHAR: out << "Char Declaration" ; break;
     case STRING: out << "String Declaration" ; break;
     case CLASS: out << "Class Declaration" ; break;

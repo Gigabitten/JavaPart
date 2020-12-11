@@ -10,7 +10,7 @@
 using namespace std;
 
 enum Token {EMPTYTOKEN, CLASS, SEMICOLON, LEFTPAREN, RIGHTPAREN, LEFTBRACKET, RIGHTBRACKET, STATIC, COMMA, PRIMITIVE, IDENTIFIER,
-            RESULT, SIGN, EQUALS, INTEGER, FLOAT, BOOL, CHAR, STRING, EXPRESSION, NULL_LIT, NEW};
+            RESULT, SIGN, EQUALS, INTEGER, FLOAT, BOOLEAN, CHAR, STRING, EXPRESSION, NULL_LIT, NEW, VOID};
 
 /*These nodes more based in expression parse?
   enum Node {CLASSDECL, CLASSBOD, CLASSBODDECLS, CLASSMEMDECLS, FIELDDECL, VARDECLS, STATINIT,
@@ -47,7 +47,7 @@ class Tokenizer {
     Token t = EMPTYTOKEN;
     name = "";
     while(isspace(text[0])) text = text.substr(1);
-    regex keywordExpr("^(class|;|\\(|\\)|\\{|\\}|static|,|\\+|-|=|int|float|bool|char|string|NULL|([a-zA-Z]|_)([a-zA-Z]|[0-9]|_))");
+    regex keywordExpr("^(class|;|\\(|\\)|\\{|\\}|static|,|\\+|-|=|int|float|boolean|void|char|string|NULL|([a-zA-Z]|_)([a-zA-Z]|[0-9]|_))");
     regex idExpr("^([a-zA-Z]|_)([a-zA-Z]|[0-9]|_)*");
     if(regex_search(text, sm, keywordExpr)) {
       if(sm[0] == "") t = EMPTYTOKEN;
@@ -63,9 +63,10 @@ class Tokenizer {
       else if(sm[0] == "=") t = EQUALS;
       else if(sm[0] == "int") t = INTEGER;
       else if(sm[0] == "float") t = FLOAT;
-      else if(sm[0] == "bool") t = BOOL;
+      else if(sm[0] == "boolean") t = BOOLEAN;
       else if(sm[0] == "char") t = CHAR;
       else if(sm[0] == "string") t = STRING;
+      else if(sm[0] == "void") t = VOID;      
       else if(sm[0] == "NULL") t = NULL_LIT;
       else if(regex_search(text, sm, idExpr)) {
         t = IDENTIFIER;
@@ -95,7 +96,7 @@ class TTest1:public Test{
  TTest1():Test("Check Each Symbol") {
   }
   bool checker() {
-    Tokenizer tokenizer("class ; ( ) { } static , - + = int float bool char string NULL zap","TTest1",1);
+    Tokenizer tokenizer("class ; ( ) { } static , - + = int float boolean char string NULL zap","TTest1",1);
     if (tokenizer.next()!=CLASS) return false;
     if (tokenizer.next()!=SEMICOLON) return false;
     if (tokenizer.next()!=LEFTPAREN) return false;
@@ -109,7 +110,7 @@ class TTest1:public Test{
     if (tokenizer.next()!=EQUALS) return false;
     if (tokenizer.next()!=INTEGER) return false;
     if (tokenizer.next()!=FLOAT) return false;
-    if (tokenizer.next()!=BOOL) return false;
+    if (tokenizer.next()!=BOOLEAN) return false;
     if (tokenizer.next()!=CHAR) return false;
     if (tokenizer.next()!=STRING) return false;
     if (tokenizer.next()!=NULL_LIT) return false;

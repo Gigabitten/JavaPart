@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <sstream>
 
 //Based off Quilt example.
 using namespace std;
@@ -9,6 +10,7 @@ using namespace std;
 #define DEBUG(x) //x
 
 class Test {
+ protected:
   string name;
  public:
   string getName() {
@@ -18,7 +20,7 @@ class Test {
     name=newName;
   }
   static void check(Test *test) {
-    //	cout << "!!!" << test->name << "!!!" <<endl;
+    cout << test -> name << endl;
     if (test->checker()) cout <<  " Passed test '" << test->getName() << "'" << endl;
     else cerr <<  " Failed" << endl;
   }

@@ -10,7 +10,7 @@
 using namespace std;
 
 enum Token {EMPTYTOKEN, CLASS, SEMICOLON, LEFTPAREN, RIGHTPAREN, LEFTBRACKET, RIGHTBRACKET, STATIC, COMMA, PRIMITIVE, IDENTIFIER,
-            RESULT, SIGN, EQUALS, INTEGER, FLOAT, BOOLEAN, CHAR, STRING, EXPRESSION, NULL_LIT, NEW, VOID};
+            RESULT, SIGN, EQUALS, INTEGER, FLOAT, BOOLEAN, CHAR, STRING, EXPRESSION, NULL_LIT, NEW, VOID, LITERAL, };
 
 /*These nodes more based in expression parse?
   enum Node {CLASSDECL, CLASSBOD, CLASSBODDECLS, CLASSMEMDECLS, FIELDDECL, VARDECLS, STATINIT,
@@ -47,7 +47,8 @@ class Tokenizer {
     Token t = EMPTYTOKEN;
     name = "";
     while(isspace(text[0])) text = text.substr(1);
-    regex keywordExpr("^(class|;|\\(|\\)|\\{|\\}|static|,|\\+|-|=|int|float|boolean|void|char|string|NULL|([a-zA-Z]|_)([a-zA-Z]|[0-9]|_))");
+    // L is a placeholder for literals; later, we'll have more than one kind of literal
+    regex keywordExpr("^(class|;|\\(|\\)|\\{|\\}|static|,|\\+|-|=|int|float|boolean|void|char|string|NULL|L|([a-zA-Z]|_)([a-zA-Z]|[0-9]|_))");
     regex idExpr("^([a-zA-Z]|_)([a-zA-Z]|[0-9]|_)*");
     if(regex_search(text, sm, keywordExpr)) {
       if(sm[0] == "") t = EMPTYTOKEN;
@@ -68,6 +69,7 @@ class Tokenizer {
       else if(sm[0] == "string") t = STRING;
       else if(sm[0] == "void") t = VOID;      
       else if(sm[0] == "NULL") t = NULL_LIT;
+      else if(sm[0] == "L") t = LITERAL;      
       else if(regex_search(text, sm, idExpr)) {
         t = IDENTIFIER;
         name = sm[0];

@@ -38,6 +38,7 @@ bool block(Tokenizer &tokens, JavaNode *ast) {
 // <formal parameter list> ::= <formal parameter> | <formal parameter list> , <formal parameter>
 // <formal parameter> ::= <type> <identifier>
 bool formalParameterList(Tokenizer &tokens, JavaNode *ast) {
+  Token t = tokens.next();
   if(t != LEFTPAREN) throw SyntaxError("Need ( to begin parameter list");
   t = tokens.next();
   while(t != RIGHTPAREN) {
@@ -70,16 +71,47 @@ bool constructorDecl(Tokenizer &tokens, JavaNode *ast) {
 // <variable declarator> ::= <identifier> = <literal>
 bool fieldDecl(Tokenizer &tokens, JavaNode *ast) {
   Token t = tokens.next();
-  
+  bool isStatic = false;
+  if(t == STATIC) {
+    isStatic = true;
+    t = tokens.next();
+  }
+  if(!isType(t)) throw SyntaxError("Field declaration requires type");
+  t = tokens.next();
+  if(t != IDENTIFIER) throw SyntaxError("Field declaration needs identifier");
+  t = tokens.next();
+  if(t != EQUALS) throw SyntaxError("Field must be initialized");
+  t = tokens.next();
+  if(t != LITERAL) throw SyntaxError("Field must be initialized");
+  t = tokens.next();
+  if(t != SEMICOLON) throw SyntaxError("Missing ; in field declaration");
+  return true;
 }
 
 // <method declaration> ::= <method header> <method body>
 // <method header> ::= static? <result type> <method declarator>
 // <result type> ::= <type> | void
+// remember - formal parameter list handles the parentheses and the optionality of the parameters
 // <method declarator> ::= <identifier> ( <formal parameter list>? )
 // <method body> ::= <block> | ;
 bool methodDecl(Tokenizer &tokens, JavaNode *ast) {
-  
+  Token t = tokens.next();
+  bool isStatic = false;
+  if(t == STATIC) {
+    isStatic = true;
+    t = tokens.next();
+  }
+  if(!(isType(t) || t == VOID)) throw SyntaxError("Method declaration needs type");
+  t = tokens.next();
+  if(t != IDENTIFIER) throw SyntaxError("Method requires identifier");
+  t = tokens.next();
+  formalParameterList(tokens, ast);
+  t = tokens.peek();
+  if(t == LEFTBRACKET) {
+    block(tokens, ast);
+  } else if(t == SEMICOLON) ; // nothing, you're done
+  else throw SyntaxError("Need ; for method declaration without body");
+  return true;
 }
 
 // <class member declaration> ::= <field declaration> | <method declaration>
@@ -87,18 +119,17 @@ bool classMemberDecl(Tokenizer &tokens, JavaNode *ast) {
   // both start with "static? type identifier" so we want to skip 3
   bool isVoid = false;
   Tokenizer temp = tokens;
-  Token t = temp.next();  
-  if(t == STATIC) {
+  Token type = temp.next();
+  Token t;
+  if(type == STATIC) {
     t = temp.next();
   }
-  if(!isType(t)) {
-    if(t == VOID) isVoid = true;
-    else throw SyntaxError("Type required when declaring member");
-  }
+  if(!(isType(type) || type == VOID)) throw SyntaxError("Type required when declaring member");
   t = temp.next();
-  if(t != identifier) throw SyntaxError("Identifier required when declaring member");
+  if(t != IDENTIFIER) throw SyntaxError("Identifier required when declaring member");
   t = tokens.peek();
   if(t == EQUALS) {
+    if(type == VOID) throw SyntaxError("Field cannot be of type 'void'");
     fieldDecl(tokens, ast);
   } else if(t == LEFTBRACKET) {
     methodDecl(tokens, ast);

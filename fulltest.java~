@@ -8,7 +8,7 @@ class Test {
     static {
         int foo = L;
         int bar = L;
-        Ford foop = new Heck(foo, bar);
+        Heck(foo, bar);
     }
     Test(float f) {
         i = L;

@@ -24,8 +24,8 @@
 * <block statement> ::= <variable declaration> | <class instance creation expression>;
 * <class instance creation expression> ::= new <identifier> ( <identifier list> )
 
-<type> ::= <primitive type> | <identifier>
-<primitive type> ::= byte | short | int | long | char | float | double | boolean
+* <type> ::= <primitive type> | <identifier>
+* <primitive type> ::= byte | short | int | long | char | float | double | boolean
 
 <letter> ::= a | b ... | z | A | B ... | Z | _
 <letters> ::= <letter> | <letter> <letters>

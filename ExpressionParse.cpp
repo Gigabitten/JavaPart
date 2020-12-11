@@ -14,13 +14,21 @@
 using namespace std;
 
 bool javaExpression(Tokenizer &tokens, JavaNode *ast);
-bool isType(Token t) { return t == FLOAT || t == INTEGER || t == BOOLEAN || t == CHAR || t == STRING || t == NULL_LIT; }
+
+const Token types[] = { FLOAT, INTEGER, BOOLEAN, CHAR, STRING, NULL_LIT, BYTE, SHORT, LONG, DOUBLE };
+// <type> ::= <primitive type> | <identifier>
+// <primitive type> ::= byte | short | int | long | char | float | double | boolean
+bool isType(Token t, string name = "Prefect") {
+  if(name == "Ford") return true; // substitute for symbol table lookup
+  for(int i = 0; i < sizeof(types) / sizeof(types[0]); i++) if(types[i] == t) return true;
+  return false;
+}
 
 // <block> ::= { <block statements>? }
 // <block statements> ::= <block statement> | <block statements> <block statement>
-// <block statement> ::= <variable declaration>; | <class instance creation expression>;
+// <block statement> ::= <variable declaration>;
 // <variable declaration> ::= <type>? <variable declarator>
-// <variable declarator> ::= <identifier> = <literal>
+// <variable declarator> ::= <identifier> = <literal> | <class instance creation expression>
 // <class instance creation expression> ::= new <identifier> ( <identifier list> )
 // <identifier list> ::= <identifier> | <identifier> , <identifier list>
 bool block(Tokenizer &tokens, JavaNode *ast) {
@@ -29,37 +37,40 @@ bool block(Tokenizer &tokens, JavaNode *ast) {
 
   while(true) {
     t = tokens.peek();
-    if(isType(t) || t == IDENTIFIER) { // if local variable declaration
-      if(isType(t)) {
+    if(isType(t, tokens.name) || t == IDENTIFIER) { // if local variable declaration
+      tokens.next();
+      if(isType(t, tokens.name)) {
         t = tokens.next();
+        if(t != IDENTIFIER) throw SyntaxError("Variable declaration needs identifier");
       }
-      if(t != IDENTIFIER) throw SyntaxError("Variable declaration needs identifier");
       t = tokens.next();
-      if(t != EQUALS) throw SyntaxError("Variable must be initialized");
+      if(t != EQUALS) throw SyntaxError("Expected '='");
       t = tokens.next();
-      if(t != LITERAL) throw SyntaxError("Variable must be initialized");
-    } else if(t == NEW) { // if class instance creation expression
-      t = tokens.next();
-      if(t != IDENTIFIER) throw SyntaxError("No identifier named in constructor call");
-      t = tokens.next();
-      if(t != LEFTPAREN) throw SyntaxError("No ( in constructor call");
-      t = tokens.peek();
-      while(t != RIGHTPAREN) {
+      if(t == LITERAL) {
+        // some stuff with the symbol table
+      } else if(t == NEW) { // if class instance creation expression
         t = tokens.next();
-        if(t != IDENTIFIER) throw SyntaxError("Need identifier in argument list for constructor call");
+        if(t != IDENTIFIER) throw SyntaxError("No identifier named in constructor call");
         t = tokens.next();
-        if(t == COMMA) {
-          t = tokens.peek();
-          if(t != IDENTIFIER) throw SyntaxError("Comma indicates more parameters, but no more found");
+        if(t != LEFTPAREN) throw SyntaxError("No ( in constructor call");
+        t = tokens.peek();
+        while(t != RIGHTPAREN) {
+          t = tokens.next();
+          if(t != IDENTIFIER) throw SyntaxError("Need identifier in argument list for constructor call");
+          t = tokens.next();
+          if(t == COMMA) {
+            t = tokens.peek();
+            if(t != IDENTIFIER) throw SyntaxError("Comma indicates more parameters, but no more found");
+          }
         }
-      }
+      } else throw SyntaxError("Expected rvalue in variable assignment");
+      t = tokens.next();
+      if(t != SEMICOLON) throw SyntaxError("Missing ; in field declaration");            
     } else break;
-    t = tokens.next();
-    if(t != SEMICOLON) throw SyntaxError("Missing ; in field declaration");      
   }
   
   t = tokens.next();
-  if(t != LEFTBRACKET) throw SyntaxError("Expected } at end of block");
+  if(t != RIGHTBRACKET) throw SyntaxError("Expected } at end of block");
   return true;
 }
 
@@ -76,7 +87,7 @@ bool formalParameterList(Tokenizer &tokens, JavaNode *ast) {
     if(t != IDENTIFIER) throw SyntaxError("Unnamed parameter in parameter list");
     t = tokens.next();
     if(t == COMMA) {
-      t = tokens.peek();
+      t = tokens.next();
       if(!isType(t)) throw SyntaxError("Comma indicates more parameters, but no more found");
     }
   }
@@ -132,12 +143,11 @@ bool methodDecl(Tokenizer &tokens, JavaNode *ast) {
   if(!(isType(t) || t == VOID)) throw SyntaxError("Method declaration needs type");
   t = tokens.next();
   if(t != IDENTIFIER) throw SyntaxError("Method requires identifier");
-  t = tokens.next();
   formalParameterList(tokens, ast);
   t = tokens.peek();
   if(t == LEFTBRACKET) {
     block(tokens, ast);
-  } else if(t == SEMICOLON) ; // nothing, you're done
+  } else if(t == SEMICOLON) tokens.next();
   else throw SyntaxError("Need ; for method declaration without body");
   return true;
 }
@@ -146,7 +156,7 @@ bool methodDecl(Tokenizer &tokens, JavaNode *ast) {
 bool classMemberDecl(Tokenizer &tokens, JavaNode *ast) {
   // both start with "static? type identifier" so we want to skip 3
   bool isVoid = false;
-  Tokenizer temp = tokens;
+  Tokenizer temp = tokens.copy();
   Token type = temp.next();
   Token t;
   if(type == STATIC) {
@@ -161,11 +171,11 @@ bool classMemberDecl(Tokenizer &tokens, JavaNode *ast) {
     tokens = temp;
     throw SyntaxError("Identifier required when declaring member");
   }
-  t = tokens.peek();
+  t = temp.peek();
   if(t == EQUALS) {
     if(type == VOID) throw SyntaxError("Field cannot be of type 'void'");
     fieldDecl(tokens, ast);
-  } else if(t == LEFTBRACKET) {
+  } else if(t == LEFTPAREN) {
     methodDecl(tokens, ast);
   } else throw SyntaxError("Malformed class member: must be a method or field declaration");
   return true;
@@ -176,7 +186,6 @@ bool classMemberDecl(Tokenizer &tokens, JavaNode *ast) {
 // <class body declaration> ::= <class member declaration> | <static initializer> | <constructor declaration>
 bool classBody(Tokenizer &tokens, JavaNode *ast) {
   Token t = tokens.next();
-  bool isStatic = false;
   if(t != LEFTBRACKET) throw SyntaxError("{ required to begin class definition");
 
   while(true) {
@@ -185,7 +194,8 @@ bool classBody(Tokenizer &tokens, JavaNode *ast) {
     // <static initializer> starts with static {
     // constructor declaration starts with an ID
   
-    Tokenizer temp = tokens;
+    Tokenizer temp = tokens.copy();
+    bool isStatic = false;    
     t = temp.next();
     // first, we deal with the possibility of staticness
     if(t == STATIC) {
@@ -281,7 +291,7 @@ public:
     }
     catch(SyntaxError e) {
       cout << "  " << e;
-      //tokenizer.check();
+      tokenizer.check();
       return false;
     }
     return true;
@@ -291,7 +301,7 @@ public:
 void Tests() {
   tests.push_back(new TTest1());
   tests.push_back(new ClassFileTest("Basic parse test", "test.java"));
-  //tests.push_back(new ClassFileTest("Full parse test", "fulltest.java"));  
+  tests.push_back(new ClassFileTest("Full parse test", "fulltest.java"));  
   runTests();
 }
 

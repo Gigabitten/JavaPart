@@ -10,8 +10,13 @@
 
 using namespace std;
 
-enum Token {EMPTYTOKEN, CLASS, SEMICOLON, LEFTPAREN, RIGHTPAREN, LEFTBRACKET, RIGHTBRACKET, STATIC, COMMA, PRIMITIVE, IDENTIFIER,
-            RESULT, SIGN, EQUALS, INTEGER, FLOAT, BOOLEAN, CHAR, STRING, EXPRESSION, NULL_LIT, NEW, VOID, LITERAL, };
+enum Token {EMPTYTOKEN, CLASS, SEMICOLON, LEFTPAREN, RIGHTPAREN, /* 0  - 4  */
+            LEFTBRACKET, RIGHTBRACKET, STATIC, COMMA, PRIMITIVE, /* 5  - 9  */
+            IDENTIFIER, RESULT, SIGN, EQUALS, INTEGER,           /* 10 - 14 */
+            FLOAT, BOOLEAN, CHAR, STRING, EXPRESSION,            /* 15 - 19 */
+            NULL_LIT, NEW, VOID, LITERAL, BYTE,                  /* 20 - 24 */
+            SHORT, LONG, DOUBLE,                                 /* 25 - 29 */
+};
 
 /*These nodes more based in expression parse?
   enum Node {CLASSDECL, CLASSBOD, CLASSBODDECLS, CLASSMEMDECLS, FIELDDECL, VARDECLS, STATINIT,
@@ -37,24 +42,30 @@ class Tokenizer {
     ss << filename << ":" << lineNumber << ":" << charNumber << ":";
     return ss.str();
   }
-
   Tokenizer(string codeText, string newFilename, int newLineNumber = 0) {
     lineNumber = newLineNumber;
     filename = newFilename;
-
     text = codeText;
+
+    originalLength = 0;
+    charNumber = 0;
   }
+  Tokenizer copy() {
+    Tokenizer t(text, filename, lineNumber);
+    return t;
+  }                 
   Token peek() {
     Token t = EMPTYTOKEN;
     name = "";
     while(isspace(text[0])) text = text.substr(1);
     // L is a placeholder for literals; later, we'll have more than one kind of literal
-    regex keywordExpr("^(class|;|\\(|\\)|\\{|\\}|static|,|\\+|-|=|int|float|boolean|void|char|string|NULL|L)");
+    regex keywordExpr("^(class|;|\\(|\\)|\\{|\\}|static|new|,|\\+|-|=|int|float|boolean|void|char|string|byte|short|long|double|NULL|L)");
     regex idExpr("^([a-zA-Z]|_)([a-zA-Z]|[0-9]|_)*");
     if(regex_search(text, sm, keywordExpr)) {
       if(sm[0] == "") t = EMPTYTOKEN;
       else if(sm[0] == "class") t = CLASS;
       else if(sm[0] == ";") t = SEMICOLON;
+      else if(sm[0] == "new") t = NEW;      
       else if(sm[0] == "(") t = LEFTPAREN;
       else if(sm[0] == ")") t = RIGHTPAREN;
       else if(sm[0] == "{") t = LEFTBRACKET;
@@ -68,14 +79,17 @@ class Tokenizer {
       else if(sm[0] == "boolean") t = BOOLEAN;
       else if(sm[0] == "char") t = CHAR;
       else if(sm[0] == "string") t = STRING;
-      else if(sm[0] == "void") t = VOID;      
+      else if(sm[0] == "void") t = VOID;
+      else if(sm[0] == "byte") t = BYTE;
+      else if(sm[0] == "short") t = SHORT;
+      else if(sm[0] == "long") t = LONG;
+      else if(sm[0] == "double") t = DOUBLE;            
       else if(sm[0] == "NULL") t = NULL_LIT;
       else if(sm[0] == "L") t = LITERAL;      
     } else if(regex_search(text, sm, idExpr)) {
       t = IDENTIFIER;
       name = sm[0];
       } else throw SyntaxError("Error: unexpected token");
-    check();
     return t;
   }
   void pop() {

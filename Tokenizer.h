@@ -15,7 +15,8 @@ enum Token {EMPTYTOKEN, CLASS, SEMICOLON, LEFTPAREN, RIGHTPAREN, /* 0  - 4  */
             IDENTIFIER, RESULT, SIGN, EQUALS, INTEGER,           /* 10 - 14 */
             FLOAT, BOOLEAN, CHAR, STRING, EXPRESSION,            /* 15 - 19 */
             NULL_LIT, NEW, VOID, LITERAL, BYTE,                  /* 20 - 24 */
-            SHORT, LONG, DOUBLE,                                 /* 25 - 29 */
+            SHORT, LONG, DOUBLE, MEMBER, PARAMETER,              /* 25 - 29 */
+            BLOCK, FIELD, METHOD                                 /* 30 - 34 */
 };
 
 /*These nodes more based in expression parse?
@@ -89,7 +90,7 @@ class Tokenizer {
     } else if(regex_search(text, sm, idExpr)) {
       t = IDENTIFIER;
       name = sm[0];
-      } else throw SyntaxError("Error: unexpected token");
+      } else throw SyntaxError("Error: unexpected token", location());
     return t;
   }
   void pop() {

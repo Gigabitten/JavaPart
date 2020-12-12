@@ -1,6 +1,8 @@
 #pragma once
 
 #include <sstream>
+//Include map for symbol table.
+#include <map>
 
 #include "Tokenizer.h"
 

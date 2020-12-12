@@ -10,6 +10,7 @@
 #include "Tokenizer.h"
 #include "Syntax.h"
 #include "AST.h"
+#include "SymbolTable.h"
 
 using namespace std;
 
@@ -33,44 +34,58 @@ bool isType(Token t, string name = "Prefect") {
 // <identifier list> ::= <identifier> | <identifier> , <identifier list>
 bool block(Tokenizer &tokens, JavaNode *ast) {
   Token t = tokens.next();
-  if(t != LEFTBRACKET) throw SyntaxError("Expected { at start of block");
+  if(t != LEFTBRACKET) throw SyntaxError("Expected { at start of block", tokens.location());
 
+  JavaNode *blook = new JavaNode(BLOCK);
   while(true) {
     t = tokens.peek();
     if(isType(t, tokens.name) || t == IDENTIFIER) { // if local variable declaration
       tokens.next();
       if(isType(t, tokens.name)) {
         t = tokens.next();
-        if(t != IDENTIFIER) throw SyntaxError("Variable declaration needs identifier");
+        if(t != IDENTIFIER) throw SyntaxError("Variable declaration needs identifier", tokens.location());
       }
+      JavaNode *blookMem = new JavaNode(FIELD);
+      blookMem->setName(tokens.name);
       t = tokens.next();
-      if(t != EQUALS) throw SyntaxError("Expected '='");
+      if(t != EQUALS) throw SyntaxError("Expected '='", tokens.location());
       t = tokens.next();
       if(t == LITERAL) {
         // some stuff with the symbol table
+        JavaNode *litTemp = new JavaNode(LITERAL);
+        blookMem->addChild(litTemp);
       } else if(t == NEW) { // if class instance creation expression
         t = tokens.next();
-        if(t != IDENTIFIER) throw SyntaxError("No identifier named in constructor call");
+        if(t != IDENTIFIER) throw SyntaxError("No identifier named in constructor call", tokens.location());
+        
+        JavaNode *blookExpr = new JavaNode(EXPRESSION);
+        blookExpr->setName(tokens.name);
+
         t = tokens.next();
-        if(t != LEFTPAREN) throw SyntaxError("No ( in constructor call");
+        if(t != LEFTPAREN) throw SyntaxError("No ( in constructor call", tokens.location());
         t = tokens.peek();
         while(t != RIGHTPAREN) {
           t = tokens.next();
-          if(t != IDENTIFIER) throw SyntaxError("Need identifier in argument list for constructor call");
+          if(t != IDENTIFIER) throw SyntaxError("Need identifier in argument list for constructor call", tokens.location());
+          JavaNode *parmTemp = new JavaNode(PARAMETER);
+          blookExpr->addChild(parmTemp);
           t = tokens.next();
           if(t == COMMA) {
             t = tokens.peek();
-            if(t != IDENTIFIER) throw SyntaxError("Comma indicates more parameters, but no more found");
+            if(t != IDENTIFIER) throw SyntaxError("Comma indicates more parameters, but no more found", tokens.location());
           }
         }
-      } else throw SyntaxError("Expected rvalue in variable assignment");
+        blookMem->addChild(blookExpr);
+      } else throw SyntaxError("Expected rvalue in variable assignment", tokens.location());
+      blook->addChild(blookMem);
       t = tokens.next();
-      if(t != SEMICOLON) throw SyntaxError("Missing ; in field declaration");            
+      if(t != SEMICOLON) throw SyntaxError("Missing ; in field declaration", tokens.location());            
     } else break;
+  ast->addChild(blook);
   }
   
   t = tokens.next();
-  if(t != RIGHTBRACKET) throw SyntaxError("Expected } at end of block");
+  if(t != RIGHTBRACKET) throw SyntaxError("Expected } at end of block", tokens.location());
   return true;
 }
 
@@ -79,16 +94,19 @@ bool block(Tokenizer &tokens, JavaNode *ast) {
 // <formal parameter> ::= <type> <identifier>
 bool formalParameterList(Tokenizer &tokens, JavaNode *ast) {
   Token t = tokens.next();
-  if(t != LEFTPAREN) throw SyntaxError("Need ( to begin parameter list");
+  if(t != LEFTPAREN) throw SyntaxError("Need ( to begin parameter list", tokens.location());
   t = tokens.next();
   while(t != RIGHTPAREN) {
-    if(!isType(t)) throw SyntaxError("Type name needed for parameter");
+    if(!isType(t)) throw SyntaxError("Type name needed for parameter", tokens.location());
     t = tokens.next();
-    if(t != IDENTIFIER) throw SyntaxError("Unnamed parameter in parameter list");
+    if(t != IDENTIFIER) throw SyntaxError("Unnamed parameter in parameter list", tokens.location());
+    JavaNode *formPara = new JavaNode(PARAMETER);
+    formPara->setName(tokens.name);
+    ast->addChild(formPara);
     t = tokens.next();
     if(t == COMMA) {
       t = tokens.next();
-      if(!isType(t)) throw SyntaxError("Comma indicates more parameters, but no more found");
+      if(!isType(t)) throw SyntaxError("Comma indicates more parameters, but no more found", tokens.location());
     }
   }
   return true;
@@ -100,7 +118,7 @@ bool formalParameterList(Tokenizer &tokens, JavaNode *ast) {
 // <constructor declarator> ::= <identifier> ( <formal parameter list>? )
 bool constructorDecl(Tokenizer &tokens, JavaNode *ast) {
   Token t = tokens.next();
-  if(t != IDENTIFIER) throw SyntaxError("Must name constructor");
+  if(t != IDENTIFIER) throw SyntaxError("Must name constructor", tokens.location());
   formalParameterList(tokens, ast);
   block(tokens, ast);
   return true;
@@ -115,15 +133,25 @@ bool fieldDecl(Tokenizer &tokens, JavaNode *ast) {
     isStatic = true;
     t = tokens.next();
   }
-  if(!isType(t)) throw SyntaxError("Field declaration requires type");
+  if(!isType(t)) throw SyntaxError("Field declaration requires type", tokens.location());
   t = tokens.next();
-  if(t != IDENTIFIER) throw SyntaxError("Field declaration needs identifier");
+  if(t != IDENTIFIER) throw SyntaxError("Field declaration needs identifier", tokens.location());
+  JavaNode *fieldMem = new JavaNode(FIELD);
+  fieldMem->setName(tokens.name);
+  if (!symbolTable.exists(fieldMem)) {
+    symbolTable.add(fieldMem, fieldMem);
+  } else throw SemanticError("Symbol "+ fieldMem->getName() + " already defined ", tokens.location());
   t = tokens.next();
-  if(t != EQUALS) throw SyntaxError("Field must be initialized");
+  if(t != EQUALS) throw SyntaxError("Field must be initialized", tokens.location());
   t = tokens.next();
-  if(t != LITERAL) throw SyntaxError("Field must be initialized");
+  if(t != LITERAL) throw SyntaxError("Field must be initialized", tokens.location());
+  //If function for literals created, move this there and use fieldMem as ast.
+  JavaNode *litTemp = new JavaNode(LITERAL);
+  fieldMem->addChild(litTemp);
+  ast->addChild(fieldMem);
+
   t = tokens.next();
-  if(t != SEMICOLON) throw SyntaxError("Missing ; in field declaration");
+  if(t != SEMICOLON) throw SyntaxError("Missing ; in field declaration", tokens.location());
   return true;
 }
 
@@ -140,15 +168,23 @@ bool methodDecl(Tokenizer &tokens, JavaNode *ast) {
     isStatic = true;
     t = tokens.next();
   }
-  if(!(isType(t) || t == VOID)) throw SyntaxError("Method declaration needs type");
+  if(!(isType(t) || t == VOID)) throw SyntaxError("Method declaration needs type", tokens.location());
   t = tokens.next();
-  if(t != IDENTIFIER) throw SyntaxError("Method requires identifier");
-  formalParameterList(tokens, ast);
+  if(t != IDENTIFIER) throw SyntaxError("Method requires identifier", tokens.location());
+  //Might need to cheek the placement, but general idea in place.
+  JavaNode *metDecl = new JavaNode(METHOD);
+  metDecl->setName(tokens.name);
+  if (!symbolTable.exists(metDecl)) {
+    symbolTable.add(metDecl, metDecl);
+  } else throw SemanticError("Symbol "+ metDecl->getName() + " already defined ", tokens.location());
+
+  formalParameterList(tokens, metDecl);
   t = tokens.peek();
   if(t == LEFTBRACKET) {
-    block(tokens, ast);
+    block(tokens, metDecl);
   } else if(t == SEMICOLON) tokens.next();
-  else throw SyntaxError("Need ; for method declaration without body");
+  else throw SyntaxError("Need ; for method declaration without body", tokens.location());
+  ast->addChild(metDecl);
   return true;
 }
 
@@ -159,25 +195,30 @@ bool classMemberDecl(Tokenizer &tokens, JavaNode *ast) {
   Tokenizer temp = tokens.copy();
   Token type = temp.next();
   Token t;
+  //We already add static node below but just to check.
   if(type == STATIC) {
     type = temp.next();
   }
   if(!isType(type) && type != VOID) {
     tokens = temp; // in case you want to output tokens to help debug    
-    throw SyntaxError("Type required when declaring member");
+    throw SyntaxError("Type required when declaring member", tokens.location());
   }
+  //Might need to cheek the placement, but general idea in place.
+  JavaNode *memDecl = new JavaNode(MEMBER);
+  memDecl->setName(tokens.name);
+  ast->addChild(memDecl);
   t = temp.next();
   if(t != IDENTIFIER) {
     tokens = temp;
-    throw SyntaxError("Identifier required when declaring member");
+    throw SyntaxError("Identifier required when declaring member", tokens.location());
   }
   t = temp.peek();
   if(t == EQUALS) {
-    if(type == VOID) throw SyntaxError("Field cannot be of type 'void'");
-    fieldDecl(tokens, ast);
+    if(type == VOID) throw SyntaxError("Field cannot be of type 'void'", tokens.location());
+    fieldDecl(tokens, memDecl);
   } else if(t == LEFTPAREN) {
-    methodDecl(tokens, ast);
-  } else throw SyntaxError("Malformed class member: must be a method or field declaration");
+    methodDecl(tokens, memDecl);
+  } else throw SyntaxError("Malformed class member: must be a method or field declaration", tokens.location());
   return true;
 }
 
@@ -186,7 +227,7 @@ bool classMemberDecl(Tokenizer &tokens, JavaNode *ast) {
 // <class body declaration> ::= <class member declaration> | <static initializer> | <constructor declaration>
 bool classBody(Tokenizer &tokens, JavaNode *ast) {
   Token t = tokens.next();
-  if(t != LEFTBRACKET) throw SyntaxError("{ required to begin class definition");
+  if(t != LEFTBRACKET) throw SyntaxError("{ required to begin class definition", tokens.location());
 
   while(true) {
     // Alright, we're going to have to do a lot of work to figure out what kind of thing we're working with
@@ -206,26 +247,62 @@ bool classBody(Tokenizer &tokens, JavaNode *ast) {
   
     // now check if it's a constructor declaration
     if(t == IDENTIFIER) {
-      if(isStatic) throw SyntaxError("Constructor can't be declared as static");
+      if(isStatic) throw SyntaxError("Constructor can't be declared as static", tokens.location());
       constructorDecl(tokens, ast);
     } else if(t == LEFTBRACKET) {
-      if(!isStatic) throw SyntaxError("You appear to be trying to declare a static block with no static keyword");
+      if(!isStatic) throw SyntaxError("You appear to be trying to declare a static block with no static keyword", tokens.location());
+      JavaNode *statics = new JavaNode(STATIC);
+      statics->setName(tokens.name);
+      ast->addChild(statics);
       tokens.next(); // clears out the word static
-      block(tokens, ast);
+      block(tokens, statics);
     } else if(isType(t) || t == VOID) {
-      classMemberDecl(tokens, ast);
+      if(isStatic) {
+        JavaNode *statics = new JavaNode(STATIC);
+        statics->setName(tokens.name);
+        ast->addChild(statics);
+        classMemberDecl(tokens, statics);
+      }
+      else classMemberDecl(tokens, ast);
     } else break; // basically just avoids a totally unnecessary bool
   }
   t = tokens.next();
-  if(t != RIGHTBRACKET) throw SyntaxError("{ has no associated }");
+  if(t != RIGHTBRACKET) throw SyntaxError("{ has no associated }", tokens.location());
   return true;
 }
 
 // <class declaration> ::= class <identifier> <class body>
 bool classDeclaration(Tokenizer &tokens, JavaNode *ast) {
-  if(tokens.next() != CLASS) throw SyntaxError("Class must begin with 'class' keyword");
-  if(tokens.next() != IDENTIFIER) throw SyntaxError("Invalid or no class name");
-  return classBody(tokens, ast);
+  if(tokens.next() != CLASS) throw SyntaxError("Class must begin with 'class' keyword", tokens.location());
+  if(tokens.next() != IDENTIFIER) throw SyntaxError("Invalid or no class name", tokens.location());
+  JavaNode *javaClass = new JavaNode(CLASS);
+  javaClass->setName(tokens.name);
+  ast->addChild(javaClass);
+  if (!symbolTable.exists(javaClass)) {
+    symbolTable.add(javaClass, javaClass);
+    //Make tree extend from class
+  return classBody(tokens, javaClass);
+  } else throw SemanticError("Symbol "+javaClass->getName() + " already defined ", tokens.location());
+  throw SyntaxError("Class id already exists.", tokens.location());
+  return false;
+  //Make tree extend from class
+  //return classBody(tokens, javaClass);
+}
+
+//Create
+void javaDeclarationHelper(string text, string fileName, int lineNumber) {
+  Tokenizer tokens(text, fileName, lineNumber);
+  JavaNode *root = new JavaNode();
+  try {
+    classDeclaration(tokens, root);
+
+    delete root;
+  } catch(SyntaxError e) {
+    tokens.check();
+    throw e;
+  } catch(SemanticError e) {
+    throw e;
+  }
 }
 
 /* not currently needed for anything

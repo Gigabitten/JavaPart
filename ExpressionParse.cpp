@@ -16,12 +16,18 @@ using namespace std;
 
 bool javaExpression(Tokenizer &tokens, JavaNode *ast);
 
-const Token types[] = { FLOAT, INTEGER, BOOLEAN, CHAR, STRING, NULL_LIT, BYTE, SHORT, LONG, DOUBLE };
+const Token types[] = { FLOAT, INTEGER, BOOLEAN, CHAR, STRING, BYTE, SHORT, LONG, DOUBLE };
 // <type> ::= <primitive type> | <identifier>
 // <primitive type> ::= byte | short | int | long | char | float | double | boolean
-bool isType(Token t, string name = "Prefect") {
+bool isType(Token t, string name = "") {
   if(name == "Ford") return true; // substitute for symbol table lookup
   for(int i = 0; i < sizeof(types) / sizeof(types[0]); i++) if(types[i] == t) return true;
+  return false;
+}
+
+const Token litTokens[] = { FLOAT_LIT, INT_LIT, BOOL_LIT, CHAR_LIT, STRING_LIT, NULL_LIT, };
+bool isLiteral(Token t) {
+  for(int i = 0; i < sizeof(litTokens) / sizeof(litTokens[0]); i++) if(litTokens[i] == t) return true;
   return false;
 }
 
@@ -35,6 +41,7 @@ bool isType(Token t, string name = "Prefect") {
 bool block(Tokenizer &tokens, JavaNode *ast) {
   Token t = tokens.next();
   if(t != LEFTBRACKET) throw SyntaxError("Expected { at start of block", tokens.location());
+  bool isDecl = false;
 
   JavaNode *blook = new JavaNode(BLOCK);
   while(true) {
@@ -43,6 +50,7 @@ bool block(Tokenizer &tokens, JavaNode *ast) {
       tokens.next();
       if(isType(t, tokens.name)) {
         t = tokens.next();
+        isDecl = true;
         if(t != IDENTIFIER) throw SyntaxError("Variable declaration needs identifier", tokens.location());
       }
       JavaNode *blookMem = new JavaNode(FIELD);
@@ -50,16 +58,19 @@ bool block(Tokenizer &tokens, JavaNode *ast) {
       t = tokens.next();
       if(t != EQUALS) throw SyntaxError("Expected '='", tokens.location());
       t = tokens.next();
-      if(t == LITERAL) {
-        // some stuff with the symbol table
-        JavaNode *litTemp = new JavaNode(LITERAL);
+      if(isLiteral(t)) {
+        JavaNode *litTemp = new JavaNode(t);
+        litTemp -> setName(tokens.name);
         blookMem->addChild(litTemp);
+        if(isDecl) {
+          if(symbolTable.exists(blookMem)) throw SemanticError("Can't add duplicate", tokens.location());
+          symbolTable.add(blookMem, litTemp);
+        }
       } else if(t == NEW) { // if class instance creation expression
         t = tokens.next();
         if(t != IDENTIFIER) throw SyntaxError("No identifier named in constructor call", tokens.location());
         
         JavaNode *blookExpr = new JavaNode(EXPRESSION);
-        blookExpr->setName(tokens.name);
 
         t = tokens.next();
         if(t != LEFTPAREN) throw SyntaxError("No ( in constructor call", tokens.location());
@@ -68,6 +79,7 @@ bool block(Tokenizer &tokens, JavaNode *ast) {
           t = tokens.next();
           if(t != IDENTIFIER) throw SyntaxError("Need identifier in argument list for constructor call", tokens.location());
           JavaNode *parmTemp = new JavaNode(PARAMETER);
+          parmTemp -> setName(tokens.name);
           blookExpr->addChild(parmTemp);
           t = tokens.next();
           if(t == COMMA) {
@@ -76,6 +88,10 @@ bool block(Tokenizer &tokens, JavaNode *ast) {
           }
         }
         blookMem->addChild(blookExpr);
+        if(isDecl) {
+          if(symbolTable.exists(blookMem)) throw SemanticError("Can't add duplicate", tokens.location());
+          symbolTable.add(blookMem, blookExpr);
+        }
       } else throw SyntaxError("Expected rvalue in variable assignment", tokens.location());
       blook->addChild(blookMem);
       t = tokens.next();
@@ -138,17 +154,19 @@ bool fieldDecl(Tokenizer &tokens, JavaNode *ast) {
   if(t != IDENTIFIER) throw SyntaxError("Field declaration needs identifier", tokens.location());
   JavaNode *fieldMem = new JavaNode(FIELD);
   fieldMem->setName(tokens.name);
-  if (!symbolTable.exists(fieldMem)) {
-    symbolTable.add(fieldMem, fieldMem);
-  } else throw SemanticError("Symbol "+ fieldMem->getName() + " already defined ", tokens.location());
   t = tokens.next();
   if(t != EQUALS) throw SyntaxError("Field must be initialized", tokens.location());
   t = tokens.next();
-  if(t != LITERAL) throw SyntaxError("Field must be initialized", tokens.location());
+  if(!isLiteral(t)) throw SyntaxError("Field must be initialized", tokens.location());
   //If function for literals created, move this there and use fieldMem as ast.
-  JavaNode *litTemp = new JavaNode(LITERAL);
+  JavaNode *litTemp = new JavaNode(t);
+  litTemp -> setName(tokens.name);
   fieldMem->addChild(litTemp);
   ast->addChild(fieldMem);
+
+  if (!symbolTable.exists(fieldMem)) {
+    symbolTable.add(fieldMem, litTemp);
+  } else throw SemanticError("Symbol "+ fieldMem->getName() + " already defined ", tokens.location());  
 
   t = tokens.next();
   if(t != SEMICOLON) throw SyntaxError("Missing ; in field declaration", tokens.location());
@@ -174,17 +192,17 @@ bool methodDecl(Tokenizer &tokens, JavaNode *ast) {
   //Might need to cheek the placement, but general idea in place.
   JavaNode *metDecl = new JavaNode(METHOD);
   metDecl->setName(tokens.name);
-  if (!symbolTable.exists(metDecl)) {
-    symbolTable.add(metDecl, metDecl);
-  } else throw SemanticError("Symbol "+ metDecl->getName() + " already defined ", tokens.location());
-
   formalParameterList(tokens, metDecl);
   t = tokens.peek();
+  JavaNode *metBlock = new JavaNode(BLOCK);
   if(t == LEFTBRACKET) {
-    block(tokens, metDecl);
+    block(tokens, metBlock);
+    metDecl -> addChild(metBlock);
   } else if(t == SEMICOLON) tokens.next();
   else throw SyntaxError("Need ; for method declaration without body", tokens.location());
   ast->addChild(metDecl);
+  if(symbolTable.exists(metDecl)) throw SemanticError("Can't redeclare " + metDecl -> getName(), tokens.location());
+  symbolTable.add(metDecl, metBlock);
   return true;
 }
 
@@ -203,10 +221,6 @@ bool classMemberDecl(Tokenizer &tokens, JavaNode *ast) {
     tokens = temp; // in case you want to output tokens to help debug    
     throw SyntaxError("Type required when declaring member", tokens.location());
   }
-  //Might need to cheek the placement, but general idea in place.
-  JavaNode *memDecl = new JavaNode(MEMBER);
-  memDecl->setName(tokens.name);
-  ast->addChild(memDecl);
   t = temp.next();
   if(t != IDENTIFIER) {
     tokens = temp;
@@ -215,9 +229,9 @@ bool classMemberDecl(Tokenizer &tokens, JavaNode *ast) {
   t = temp.peek();
   if(t == EQUALS) {
     if(type == VOID) throw SyntaxError("Field cannot be of type 'void'", tokens.location());
-    fieldDecl(tokens, memDecl);
+    fieldDecl(tokens, ast);
   } else if(t == LEFTPAREN) {
-    methodDecl(tokens, memDecl);
+    methodDecl(tokens, ast);
   } else throw SyntaxError("Malformed class member: must be a method or field declaration", tokens.location());
   return true;
 }
@@ -251,17 +265,11 @@ bool classBody(Tokenizer &tokens, JavaNode *ast) {
       constructorDecl(tokens, ast);
     } else if(t == LEFTBRACKET) {
       if(!isStatic) throw SyntaxError("You appear to be trying to declare a static block with no static keyword", tokens.location());
-      JavaNode *statics = new JavaNode(STATIC);
-      statics->setName(tokens.name);
-      ast->addChild(statics);
       tokens.next(); // clears out the word static
-      block(tokens, statics);
+      block(tokens, ast);
     } else if(isType(t) || t == VOID) {
       if(isStatic) {
-        JavaNode *statics = new JavaNode(STATIC);
-        statics->setName(tokens.name);
-        ast->addChild(statics);
-        classMemberDecl(tokens, statics);
+        classMemberDecl(tokens, ast);
       }
       else classMemberDecl(tokens, ast);
     } else break; // basically just avoids a totally unnecessary bool
@@ -278,15 +286,12 @@ bool classDeclaration(Tokenizer &tokens, JavaNode *ast) {
   JavaNode *javaClass = new JavaNode(CLASS);
   javaClass->setName(tokens.name);
   ast->addChild(javaClass);
-  if (!symbolTable.exists(javaClass)) {
-    symbolTable.add(javaClass, javaClass);
-    //Make tree extend from class
-  return classBody(tokens, javaClass);
-  } else throw SemanticError("Symbol "+javaClass->getName() + " already defined ", tokens.location());
-  throw SyntaxError("Class id already exists.", tokens.location());
-  return false;
-  //Make tree extend from class
-  //return classBody(tokens, javaClass);
+  JavaNode *body = new JavaNode(CLASS);
+  classBody(tokens, body);
+  javaClass -> addChild(body);
+  if(symbolTable.exists(javaClass)) throw SemanticError("Can't redeclare " + javaClass -> getName(), tokens.location());
+  symbolTable.add(javaClass, body);
+  return true;
 }
 
 //Create
@@ -305,51 +310,6 @@ void javaDeclarationHelper(string text, string fileName, int lineNumber) {
   }
 }
 
-/* not currently needed for anything
-   bool javaExpression(Tokenizer &tokens, JavaNode *ast) {
-   Token t = tokens.peek();
-
-   Tokenizer temp = tokens;
-
-   if (t == CLASS) {
-   return classDeclaration(tokens, ast);
-   }
-   else if (t == STATIC) {
-    
-   }
-   else if (t == INTEGER) {
-
-   }
-   else if (t == FLOAT) {
-
-   }
-   else if (t == BOOLEAN) {
-
-   }
-   else if (t == CHAR) {
-
-   }
-   else if (t == STRING) {
-
-   }
-
-   return false;
-   }
-
-   //Would expression helper be a void function?
-   void javaExpressionHelper(string texts, string filename, int linenumber) {
-   Tokenizer tokens(texts, filename, linenumber);
-   JavaNode *root = new JavaNode(EXPRESSION);
-   try {
-   javaExpression(tokens, root);
-   delete root;
-   } catch(SyntaxError e) {
-   tokens.check();
-   throw e;
-   }
-   }
-*/
-
 // only tests that the file compiles error-free
 class ClassFileTest : public Test {
   string fileName;
@@ -358,19 +318,26 @@ public:
     fileName = newFileName;
   }
   bool checker() {
+    symbolTable.clear();
     ifstream inf(fileName);
     stringstream ss;
     // I found this online. It's weird, but it basically makes sense if you think about it.
     inf >> ss.rdbuf();
     Tokenizer tokenizer(ss.str(), name);
     try {
-      classDeclaration(tokenizer, new JavaNode());    
+      classDeclaration(tokenizer, new JavaNode());
     }
     catch(SyntaxError e) {
       cout << "  " << e;
       tokenizer.check();
       return false;
     }
+    catch(SemanticError e) {
+      cout << " " << e << endl;
+      cout << symbolTable << endl;
+      return false;
+    }
+    cout << symbolTable << endl;
     return true;
   }
 };
@@ -378,7 +345,7 @@ public:
 void Tests() {
   tests.push_back(new TTest1());
   tests.push_back(new ClassFileTest("Basic parse test", "test.java"));
-  tests.push_back(new ClassFileTest("Full parse test", "fulltest.java"));  
+  tests.push_back(new ClassFileTest("Full parse test", "fulltest.java"));
   runTests();
 }
 

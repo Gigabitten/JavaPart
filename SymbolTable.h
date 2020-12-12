@@ -9,6 +9,7 @@ class SymbolTable {
     }
     bool exists(JavaNodeId *id) {
         bool res = symbols.find(*id)!=symbols.end();
+        if(res) cout << *id << endl;
         return res;
     }
     void add(JavaNode *node, JavaNode *ast) {
@@ -19,11 +20,6 @@ class SymbolTable {
         for (auto& [key, value]: st.symbols)
             out << key << "->" << value;
         return out<<endl;
-    }
-    ~SymbolTable() {
-        for (auto& [key, value]: symbols) {
-            value->cleanUp();
-        }
     }
 };
 

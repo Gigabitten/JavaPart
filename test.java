@@ -1,3 +1,4 @@
 class Test {
-    static int i = L;
+    static int i = 3;
+    int j = 6;
 }

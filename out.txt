@@ -1,0 +1,2 @@
+g++ -o ExpressionParse Testing.o Tokenizer.o AST.o ExpressionParse.cpp -Wall -g 
+Makefile:7: recipe for target 'ExpressionParse' failed
